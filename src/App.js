@@ -5,6 +5,7 @@ import Navbar from './components/navbar/navbar.js';
 import { Switch, Route} from 'react-router-dom';
 import Home from './components/views/home/home.js';
 import Checkout from './components/views/checkout/checkout.js';
+import firebase from './firebase';
 
 class App extends Component {
   constructor() {
@@ -21,6 +22,25 @@ class App extends Component {
       total: 0,
       cart: [],
       products: products
+    });
+
+    this.getProducts();
+  }
+
+  getProducts = (func) => {
+    const prodsRef = firebase.database().ref('cart');
+    prodsRef.on('value', (snapshot) => {
+      let items = snapshot.val();
+      let newState = [];
+      if (items != null) {
+        for (let index in items) {
+          newState.push(items[index]);
+        }
+      }
+      this.setState({
+        cart: newState
+      });
+      return newState;
     });
   }
 
@@ -58,6 +78,14 @@ class App extends Component {
     });
 
     this.calcTotal();
+
+    // add new product to firebase
+    firebase.database().ref('cart').set(items);
+    this.getProducts();
+  }
+
+  removeItem = (id) => {
+    console.log(id);
   }
 
 
@@ -67,7 +95,7 @@ class App extends Component {
         <Navbar total={this.state.total} />
         <Switch>
           <Route exact path='/' render={() => <Home addItem={this.addItem} products={this.state.products} />}></Route>
-          <Route exact path='/checkout' render={() => <Checkout />}></Route>
+          <Route exact path='/checkout' render={() => <Checkout products={this.state.cart} total={this.state.total} removeItem={this.removeItem} />}></Route>
         </Switch>
       </div>
     );
